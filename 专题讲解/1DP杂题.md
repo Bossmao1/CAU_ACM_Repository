@@ -20,3 +20,10 @@
 
 ## [P14636 [NOIP2025] 清仓甩卖 / sale（民间数据）](https://www.luogu.com.cn/problem/P14636)
 
+## [P8867 [NOIP2022] 建造军营](https://www.luogu.com.cn/problem/P8867)
+
+## [U198409](https://www.luogu.com.cn/problem/U198409)
+
+## [U205716](https://www.luogu.com.cn/problem/U205716)
+
+## [2024CACCT4](https://snail.cronlygames.cn/problem/P1689)
