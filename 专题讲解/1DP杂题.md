@@ -27,3 +27,6 @@
 ## [U205716](https://www.luogu.com.cn/problem/U205716)
 
 ## [2024CACCT4](https://snail.cronlygames.cn/problem/P1689)
+
+## [CF1476F Lanterns](https://www.luogu.com.cn/problem/CF1476F)
+
