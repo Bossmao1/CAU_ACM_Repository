@@ -30,3 +30,6 @@
 
 ## [CF1476F Lanterns](https://www.luogu.com.cn/problem/CF1476F)
 
+## [P7961 [NOIP2021] 数列](https://www.luogu.com.cn/problem/P7961)
+
+## [P7962 [NOIP2021] 方差](https://www.luogu.com.cn/problem/P7962)
