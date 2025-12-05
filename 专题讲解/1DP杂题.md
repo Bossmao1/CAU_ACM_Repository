@@ -28,8 +28,9 @@
 
 ## [2024CACCT4](https://snail.cronlygames.cn/problem/P1689)
 
-## [CF1476F Lanterns](https://www.luogu.com.cn/problem/CF1476F)
+## [CF1476F Lanterns](https://codeforces.com/problemset/problem/1476/F)
 
 ## [P7961 [NOIP2021] 数列](https://www.luogu.com.cn/problem/P7961)
 
 ## [P7962 [NOIP2021] 方差](https://www.luogu.com.cn/problem/P7962)
+
