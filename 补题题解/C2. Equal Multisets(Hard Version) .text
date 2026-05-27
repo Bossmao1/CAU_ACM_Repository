@@ -1,0 +1,155 @@
+# $\href{https://codeforces.com/contest/2211/problem/C2}{C2. \space Equal \space Multisets (Hard \space Version)}$
+
+## 碎碎念
+
+场上明明都把题解里面写的内容全想到了， 但是倒在了最后最简单的一步
+
+## 题解
+
+分析问题
+
+从 $[l, l + j - 1]$ 移动到 $[l + 1, l + k]$ 依旧合法
+
+要求什么？ 
+
+1. $a[l] = a[l + k] $ 并且 $b[l] = b[l + k]$
+
+或者
+
+2. $a[l] = b[l]$  并且 $a[k] = b[k]$
+
+其中会有 
+
+$l \le n - k$
+
+这说明什么？
+
+假设 $a[l]$ 的时候使用了 $1$ 的判据
+
+就说明 $a[l] = a[l_1]$ 满足 $l \equiv l_1 \pmod{k}$
+
+也就是每 $k$ 个分组 他们都要相等。
+
+
+
+也就是说， 对于一组， $a[i]$ 并不全不相等
+
+那么 一定要有 $a[i] = b[i]$
+
+倘若 一组中 $a[i]$ 全部相等则只要满足 同样下标的 $b[i]$ 全部相等即可且必须全部相等。
+
+但是 $b[i]$​ 的取值怎么办？
+
+如果 $b[i]$ 全是 $-1$ 那么我们不做处理
+
+如果 一组中 存在$b[i] \neq b[i_0]$ ， 且两者均不为 $-1$  则一定不可能
+
+否则 就是可行的。
+
+
+
+在操作完上述 的 必要条件之后， 意味着什么?
+
+这代表着我们只要前 $k$ 个如果成立 就可以完全可以.(没错我场上卡在这了)
+
+
+
+我们记录 $cta[i]$ 为下标 $j$ 从$1$ 到 $k$ 里面, 值为 $i$ 的 $a[j]$ 的个数
+
+我们记录 $ctb[i]$ 为下标 $j$ 从$1$ 到 $k$ 里面, 值为 $i$ 的 $b[j]$ 的个数, 其中 $-1$ 不计入计数
+
+前 $k$ 个可以成立的充分必要条件是， 在上述操作结束之后$\forall i \le n, ctb[i] \le cta[i]$
+
+最后判断过关，答案就是 $Yes$
+
+## AC 代码
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+#define no puts("No"); return;
+int t;
+int n, k;
+const int N = 2e5 + 1156;
+int a[N], b[N];
+int cta[N], ctb[N];
+void solve(){
+	cin >> n >> k;
+	for (int i = 1; i <= n; i ++)
+		cta[i] = ctb[i] = 0;
+	for (int i = 1; i <= n; i ++)
+		cin >> a[i];
+	
+	for (int i = 1; i <= n; i ++)
+		cin >> b[i];
+	
+	for (int i = 1; i <= min (k, n - k); i ++){
+		int type = 0;
+		if (i + k > n) type = 1; 
+		for (int j = 1; ; j ++){
+			if (j * k + i > n) break;
+			if (a[i + j * k] != a[i + (j - 1) * k])
+				type = 1;	
+		}//这个就意味着只能取 a[i] = b[i]
+		if (type == 1)
+			for (int j = 0; ; j ++){
+				int u = j * k + i;
+				if (j * k + i > n) break;
+				if (a[u] == b[u]) continue;
+				else if (b[u] == -1) b[u] = a[u];
+				else {
+					no
+				}
+			}
+		else {
+			int type2 = 0;
+			int base = 0;
+			for (int j = 0; ;j ++){
+				int u = j * k + i;
+				if (u > n) break;
+				if (b[u] != -1) {
+					base = b[u];
+					type2 = 1;
+					break;
+				}
+			}
+			for (int j = 0; ; j ++){
+				int u = j * k + i;
+				if (u > n) break;
+				if (b[u] == -1){
+					b[u] = base;
+					continue;
+				}else if (b[u] == base) continue;
+				else {
+					no
+				}	
+			}
+		}
+	}
+	for (int i = 1; i <= k; i ++){
+		cta[a[i]] ++;
+		if (b[i] != -1)
+			ctb[b[i]] ++;
+	}
+	for (int i = 1; i <= n; i ++){
+		if (ctb[i] > cta[i]){
+			no
+		}
+	}
+	puts("Yes");
+	return;
+}
+signed main (){
+
+	ios::sync_with_stdio(false); 
+	cin.tie(nullptr); 
+	cout.tie(nullptr); 
+	cin >> t;
+	while (t --){
+		solve();
+	}
+	return 0;
+}
+```
+

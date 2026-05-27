@@ -1,0 +1,175 @@
+# $\href {https://codeforces.com/contest/2209/problem/E}{E. A Trivial String Problem}$
+
+## 题解
+
+### 题意说明
+
+定义函数 $f(s)$ , 其中 $s$ 是一个字符串， 该函数表示该字符串最多分多少段， 使得他们都是 $s$ 的一个前缀。 
+
+例如 $s = abaabab$ 会有 $f(s) = 4$ 
+
+将其分为 $ab$ , $a$, $ab$, $ab$ 
+
+例如 $s = abaadd$， 会有 $f(s) = 1$
+
+因为只能分为 $abaadd$
+
+要求在 $O(n)$ （$n$ 为 $s$ 的长度）复杂度之内求出
+
+$\sum\limits_{i = 1}^{n}f(s[1, i])$
+
+其中 $s[1, i]$ 表示 $s_1s_2...s_i$
+
+### 思路
+
+分段的起点一定是 $s_1$
+
+我们换个角度来思考问题， 加入对于 $s[1, i]$ 的情况我们已经处理完了， 我们考虑 $s[1, i + 1]$ 的情况。 
+
+那么对于字符串 $s[1, i]$ 我们一定存在某种分段。 
+
+
+
+![1](C:\Users\Lenovo\Desktop\++AU\题解们\E. A Trivial String Problem\1.png)
+
+如图， 我们假设如此的最优分段， 可知第一个性质， 每一个分段的开头一定是 $s_1$ ， 那么我们可以统计所有字符为$s_1$ 的位置， 不妨将这些位置构成的集合 为  ${pos_i}$ 对于新加入的 元素 $s_{i + 1}$，我们要求的其实是
+
+​	$\max\limits_{j}f(s[1, pos_j - 1]) + 1$
+
+其中
+
+$pos_j < i, s[pos_j, i] $是 $s$ 的一个前缀  
+
+那么我们得到了一个朴素算法 ：
+
+遍历所有 $pos_j$ 每次计算， 根据判据求解最大值， 时间复杂度为 $O(n^2)$
+
+我们考虑性质。 
+
+#### 所有$i + 1$时选取的 $pos_j$ 一定是 $s[1, i]$ 最优分段中每一段的开头
+
+
+
+![2](C:\Users\Lenovo\Desktop\++AU\题解们\E. A Trivial String Problem\2.png)
+
+如图 ， 不可能选取 $pos_3$
+
+这是因为如果选取了 $pos_3$, 那么就说明这不是$s[1, i]$ 的 一个最优分段， 这是因为 我可以分成 $[pos_1, pos_2 - 1][pos_2, pos_3 - 1][pos_3, pos_4 - 1][pos_4, i]$ 四段而不是三段。
+
+这只是一个特殊例子， 这样的想法是适用于一般情况的。 
+
+既然必须是最优分段中的开头到 $i + 1$ 那么这就说明我们要找到离 $i + 1$ 最近的一个 $pos_j$ 使得 $s[pos_j, (i + 1)]$ 是其的一个前缀。 
+
+也就是说们要找到一个最短的相同前后缀。 
+
+最长前后缀我们可以用 border 来处理 ， 那么最短呢？
+
+我们记录 $minb[i]$ 为 $s[1, i]$ 的最短前后缀， 我们会有：
+
+1. $border[i] = 0$ , $minb[i] = i$
+
+2. $border[i]\neq 0$,  $minb[i] = minb[border[i]]$
+
+   顺序递推即可
+
+   于是我们得到了一个 $O(n)$ 的算法。
+
+   
+
+   记录 $f[i]$ 为 $f(s[1, i])$ 
+
+   $f[i] = f[i - minb[i]] + 1$
+
+   最终求和即可。 
+
+   ## Ac 代码
+
+   ```c++
+   #include <bits/stdc++.h>
+   using namespace std;
+   typedef long long ll;
+   
+   const ll Mo1 = 31;
+   const ll N = 1e6 + 1134;
+   const ll Mod = 998244353;
+   
+   ll Nex[N], mi[N], minb[N];
+   ll t;
+   ll dp[N];
+   char str[N], tmp[N];
+   
+   void dfs(int i){
+   	if (minb[i] != -1) return;
+   	if (Nex[i] == 0){
+   		minb[i] = i;
+   		return;
+   	}
+   	int len = Nex[i];
+   	if (minb[i] == -1)
+   		dfs(len);
+   	minb[i] = minb[len];
+   	return;
+   }
+   ll get_ans (char s[], ll len){
+   	for (ll i = 0; i <= len; i ++)
+   		dp[i] = 0, Nex[i] = 0, minb[i] = -1;
+   	Nex[1] = 0;
+   	minb[1] = 1;
+   	
+   	for (int i = 2, j = 0; i <= len; i ++){
+   		while (j && s[i] != s[j + 1])
+   			j = Nex[j];
+   		if (s[i] == s[j + 1])
+   			j ++;
+   		Nex[i] = j;
+   		
+   		if (Nex[i] == 0) minb[i] = i;
+   		else minb[i] = minb[Nex[i]];
+   	}
+   	dp[1] = 1;
+   	ll ans = 1;
+   	for (ll i = 2; i <= len; i ++){
+   		ll pre;
+   		ll len = minb[i];
+   		pre = i - len;
+   		dp[i] = dp[pre] + 1;
+   		ans += dp[i];
+   	}
+   	return ans;
+   }
+   
+   void solve(){
+   	ll n, q;
+   	cin >> n >> q;
+   	for (ll i = 1; i <= n; i ++)
+   		cin >> str[i];
+   	while (q --){
+   		ll l, r;
+   		scanf("%lld%lld", &l, &r);
+   		ll cnt = 0;
+   		for (ll i = l; i <= r; i ++)
+   			tmp[++ cnt] = str[i];
+   			
+   		printf("%lld\n", get_ans (tmp, cnt));
+   	}
+   }
+   
+   signed main (){
+   	mi[0] = 1;
+   	cin >> t;
+   	while (t --)
+   		solve();
+   	
+   	return 0;
+   }
+   /*
+   1
+   5 2
+   aaaaa
+   1 5
+   2 4
+   */
+   ```
+
+   
+   

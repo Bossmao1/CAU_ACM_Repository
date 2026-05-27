@@ -1,0 +1,101 @@
+# $\href {https://codeforces.com/contest/2192/problem/E}{E. Swap \space to \space Rearrange}$ 
+
+## 题解
+
+本质上就是为了让每一个元素在上面一个数组中的个数等于下面一个数组中的个数让它们相等。 
+
+不成立的情况太容易 去讨论了。
+
+核心是 上面的等于下面的。
+
+于是我们可以把每一个元素看成一个节点， 将 $a_i 和 b_i$ 连边。 每一个出边代表把它归为 上面一个数组， 每一个入边 把它归为下面一个数组。 那么出入边平衡就代表这 上下两个数组中个数相同。由于所有元素的个数均为偶数， 由欧拉一笔画的神秘小定理可以知道， 一定存在一种边的定向方式令其满足题意。 
+
+ 
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+const int N = 1e6 + 113;
+int t;
+int n;
+struct Ed{
+	int v, nex, vis, use;
+}e[N * 2];
+int top[N], cnt = 0;
+int a[N], b[N], cur[N];
+int tong[N];
+void Add (int u, int v){
+	e[++ cnt] = {v, top[u], 0, 0};
+	top[u] = cnt;
+	e[++ cnt] = {u, top[v], 0, 0};	
+	top[v] = cnt;
+}
+
+void dfs (int u){
+	int v;
+	v = -1;
+	for (; cur[u];){
+		int id = cur[u];
+		cur[u] = e[cur[u]].nex;
+		if (e[id].vis == 1) continue;
+		e[id].vis = e[id ^ 1].vis = 1;
+		e[id].use = 1;
+		v = e[id].v;
+		break;
+	}
+	//cout << u << ' ' << v << endl;
+	if (v == -1) return;
+	dfs(v);
+}
+
+void solve (){
+	cnt = 1;
+	int n;
+	int ans = 0;
+
+	cin >> n;
+	for (int i = 1; i <= n; i ++)
+		top[i] = 0, tong[i] = 0;
+	for (int i = 1; i <= n; i ++)
+		cin >> a[i], tong[a[i]] ++;
+	for (int i = 1; i <= n; i ++)
+		cin >> b[i], tong[b[i]] ++;
+		
+	for (int i = 1;i <= n; i ++){
+		if (tong[i] % 2 == 1){
+			cout << -1 << endl;
+			return;
+		}
+	}
+	
+	for (int i = 1; i <= n; i ++)
+		Add(a[i], b[i]);
+		
+	for (int i = 1; i <= n; i ++)
+		cur[i] = top[i];
+	for (int i = 1; i <= n; i ++){
+		if (cur[i] != 0){
+			dfs(i);
+		}
+	}
+	for (int i = 2; i <= 2 * n + 1; i += 2){
+		if (e[i].use == 0) ans ++;
+	}
+	cout << ans;
+	cout << endl;
+	for (int i = 2; i <= 2 * n + 1; i += 2){
+		if (e[i].use == 0) cout << i / 2 << ' ';
+	}
+	cout << endl;
+	return ;
+}
+signed main (){
+	cin >> t;
+	while (t --)
+		solve();
+	
+	return 0;
+}
+```
+

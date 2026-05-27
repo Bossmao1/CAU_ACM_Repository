@@ -1,0 +1,110 @@
+# $\href {https://codeforces.com/contest/2195/problem/F}{F. Parabola Independence}$ 
+
+## 题解 
+
+我们很容易判断两个函数之间能不能同时选。 
+
+于是我们考虑在两个可以一起选的函数之间连边， 于是问题就转化成了在一个图中取出一个子图满足这个子图是一个完全图， 并使得这个完全图最大。
+
+但是这是一个np-hard 问题， 我们无法在多项式时间复杂度内解决。 
+
+于是我们观察性质， 发现 如果 $f_1$ 和 $f_2$ 可以一起选， 那么说明 $f_1(x)>f_2(x) \space \forall x\in R$
+
+而不等号是具有传递性的。 
+
+于是我们把边转化为有向边， 换句话说， 若$f_1 > f_2$ 我们连一条 $f_1$ 指向 $f_2$ 的边。 
+
+那么我们就会得到一个 Dag， 并且 若 存在 $u \rightarrow v$ 的一条路径， 那么这一整条路径上的点我们都可以选取。 
+
+那么该问题就被转化成了在一个有向无环图上跑dp的问题了。
+
+
+
+## AC Die 码
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+int t;
+const int N = 3e3 + 114;
+int a[N], b[N], c[N];
+int du1[N], du2[N];
+int dp1[N], dp2[N], vis[N];
+vector <int> e1[N], e2[N];
+int n;
+void solve(){
+	scanf("%lld", &n);
+	for (int i = 1; i <= n; i ++){
+		e1[i].clear(); 
+		e2[i].clear();
+		du1[i] = du2[i] = 0;
+		dp1[i] = dp2[i] = 0;
+		scanf("%lld%lld%lld", &a[i], &b[i], &c[i]);
+	}
+	for (int i = 1; i <= n; i ++){
+		for (int j = i + 1; j <= n; j ++){
+			if (i == j) continue;
+			//注意二次项系数捏
+			int a_ = a[i] - a[j], b_ = b[i] - b[j], c_ = c[i] - c[j];
+			if (a[i] != a[j]){
+				if (b_* b_ - 4 * a_ * c_ < 0){ //说明没有根 可以连边
+					int u = i, v = j;
+					if (c[j] > c[i])
+						swap(u, v);
+					du1[v] ++, du2[u] ++;
+					e1[u].push_back(v);
+					e2[v].push_back(u);		
+				}
+			} else if (b[i] == b[j]){
+				int u = i, v = j;
+				if (c[j] > c[i])
+					swap(u, v);
+				du1[v] ++, du2[u] ++;
+				e1[u].push_back(v);
+				e2[v].push_back(u);				
+			}
+		}
+	}
+	queue <int> q;
+	for(int i = 1; i <= n; i ++){
+		if (du1[i] == 0) q.push(i), dp1[i] = 1;
+	}	
+	while (!q.empty()){
+		int u = q.front ();
+		q.pop();
+		for (auto v : e1[u]){
+			dp1[v] = max (dp1[v], dp1[u] + 1);
+			du1[v] --;
+			if (du1[v] == 0)
+				q.push(v);
+		}
+	}
+	for(int i = 1; i <= n; i ++){
+		if (du2[i] == 0) q.push(i), dp2[i] = 1;
+	}	
+	
+	while (!q.empty()){
+		int u = q.front ();
+		q.pop();
+		for (auto v : e2[u]){
+			dp2[v] = max (dp2[v], dp2[u] + 1);
+			du2[v] --;
+			if (du2[v] == 0)
+				q.push(v);
+		}
+	}
+	 
+	for (int i = 1; i <= n; i ++)
+		printf("%lld ", dp1[i] + dp2[i] - 1);
+	printf("\n");
+}
+signed main (){
+	scanf ("%lld", &t);
+	while (t --)
+		solve();
+
+	return 0;
+}
+```
+
