@@ -1,0 +1,502 @@
+# 2025 XCPC 南京场
+
+前言： 在去年的十月份左右吧， 有人找我组队， 但是那个时候我已经有了一个团体故拒绝了。 谁曾想， 信电获取的消息更多， 他们的队伍第一年就去参赛了， 而我们却因为信息差没有成功报名， 导致要再等一年。 他们参加的其中一场就是南京站， 固我来尝尝咸淡。 
+
+## $\href{https://qoj.ac/contest/2581/problem/14802}{B. What, More Kangaroos?}$https://qoj.ac/contest/2581/problem/14802
+
+### 题解
+
+​	发现操作1和操作2会抵消， 操作3和操作4会抵消， 所以我们看成只对两个按钮做正整数次操作， 这一步要枚举， 一共四种。
+
+​	假如我们选择了操作1和操作3， 那么我们设操作1干了 $x$ 次， 操作2干了 $y$ 次。 由于限制 我们有 $x, y>0$
+
+那么我就是要 最大化 $c_i + xa_i + yb_i < 0$ 的个数， 由于 $c_i > 0 $ ， 则知 $xa_i + yb_i < -c_i$。 事实上我们只要让 $xa_i + yb_i < 0$ 就可以了， 因为我可以让 $x, y$ 同时乘上一个很大系数。
+
+​	换句话数， 我们现在要最大化 $xa_i + yb_i < 0$ 的个数。
+
+​	要分类
+
+ $a_i * b_i = 0$ 两个全为0 不可以， 有一个为0，看另一个， 如果小于0则一定可以， 否则一定不行。
+1. $a_i>0, b_i>0$ 一定不可以
+1. $a_i < 0, b_i < 0$ 一定可以
+1. $a_i < 0, b_i  > 0$ 移项， 化简得到  $ -\frac{a_i}{b_i} > \frac{x}{y}$
+1. $a_i > 0, b_i < 0$ 移相， 化简得到 $ -\frac{a_i}{b_i} < \frac{x}{y}$ 
+
+对于1， 2， 3可以直接统计， 对于 4， 5 我们发现本质是区间覆盖问题， 使用离散化加前缀和处理即可。 
+
+### Coding
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+int t;
+const int N = 2e5 + 121;
+int a[N], b[N], c[N];
+int neg_[2] = {1, -1};
+
+struct Node{
+	int a, b;
+	int type;
+}tmp[N];
+int ans = 0;
+int tot = 0;
+int last_ans = 0;
+bool com (Node x, Node y){
+	return abs(x.a) * abs(y.b) < abs(x.b) * abs(y.a); 
+} //使用乘法排序保持精度
+void get_(int num1, int num2){
+	if (num1 == 0 && num2 == 0) return;
+	if (num1 == 0){
+		if (num2 < 0)	ans ++;
+		return;
+	}
+	if (num2 == 0){
+		if (num1 < 0) ans ++;
+		return;
+	}
+	if (num1 * num2 > 0) {
+		if (num1 < 0) ans ++;	
+		return;
+	}
+	if (num2 > 0)
+		tmp[++ tot] = {num1, num2, 0};
+	else 
+		tmp[++ tot] = {num1, num2, 1};
+	return;
+}
+int sum[N];
+
+void solve(){
+	int n;
+	cin >> n;
+	last_ans = 0;
+
+	for (int i = 1; i <= n; i ++)
+		cin >> a[i] >> b[i] >> c[i];
+	for (int i = 0; i <= 1; i ++){
+		for (int j = 0; j <= 1; j ++){
+			ans = 0;
+			tot = 0;
+			for (int k = 0; k <= n + 10; k ++)
+				sum[k] = 0;
+
+			for (int k = 1; k <= n; k ++){
+				get_(a[k] * neg_[i], b[k] * neg_[j]);	
+			}
+			sort (tmp + 1, tmp + 1 + tot, com);
+			int pre = 0;
+			for (int k = 1; k <= tot; k ++){
+				if (k == 1) pre ++;
+				else if (tmp[k].a * tmp[k - 1].b != tmp[k].b * tmp[k - 1].a) pre ++;
+				if (tmp[k].type == 1){
+					sum[pre] ++;
+				}else {
+					sum[0] ++;
+					sum[pre] --;
+				}
+			}
+			int tmp_ans = sum[0];
+			for (int k = 1; k <= n + 10; k ++){
+				sum[k] = sum[k] + sum[k - 1];
+				tmp_ans = max(tmp_ans, sum[k]);
+			}
+			last_ans = max(last_ans, tmp_ans + ans);
+		}
+	}	
+	cout << last_ans << endl;
+	return;
+}
+signed main (){
+	cin >> t;
+	while (t --)
+		solve();
+			
+	return 0;
+}
+/*
+I wish my code could turn back the time.
+*/
+```
+
+## $\href{https://qoj.ac/contest/2581/problem/14807}{G. Bucket Bonanza}$ https://qoj.ac/contest/2581/problem/14807
+
+### 碎碎念
+
+​	官方预期是给到比B简单， 但是我感觉比B难
+
+### 题解
+
+​	先思考一件事情， 我如果两个桶在都能流完的情况下怎么合并最优？首先两个桶合并会有 $v_1 > v_2, l_1 > l_2$ 通过计算我们发现如果$tl_1 - v_2 > 0$ 那么合并就是赚的。   这个式子告诉我们， 小体积和大流量的组合是优的。
+
+​	所以我们将体积从小到大排序， 将流量从大到小排序， 记录排序后的数组是 ${L_i}, {V_i}$ , 那么 ${tL_i - V_i}$ 是单调递增的， 我们只要根据$tL_i - V_i > 0$二分查找即可。 
+
+​	不过我们发现一些问题， 先考虑多次合并。 
+
+​	如果 $L_i$ 的容积为 $V_u$ ,  $V_i$ 的流量为 $L_v$, 那么他们合并之后 $V_u$ 和 $L_v$ 是新桶的数值
+
+​	如果 $L_i$ 的溶体就是 $V_i$ 那么将它 "合并" 就意味着它已流完。 
+
+​	其实这么排序之后， 我们与其将他们当作是合并不如当作是删去一个体积和一个流量， 自身合并对应流完。 
+
+### Coding
+
+​	
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+int t;
+const int N = 2e5 + 112;
+
+struct Node {
+	int v, l, id;
+}tmp[N], tmp_v[N], tmp_l[N];
+
+struct Qu{
+	int val, id;
+}que[N];
+bool com2 (Qu x, Qu y){
+	return x.val < y.val;
+}
+
+bool com3 (Node x, Node y){
+	if (x.v == y.v) return x.l < y.l;
+	return x.v < y.v;
+}
+
+bool com4 (Node x, Node y){
+	if (x.l == y.l) return x.v > y.v;
+	return x.l > y.l;
+}
+int ans [N];
+int exi [N];
+
+void solve(){
+	int n;
+	priority_queue <Node> q_;
+	cin >> n;
+	for (int i = 1; i <= n; i ++)
+		cin >> tmp[i].v;
+	for (int i = 1;i <= n; i ++)
+		cin >> tmp[i].l;
+	for (int i = 1;i <= n; i ++)
+		exi[i] = 1;
+	int tot_v1 = 0, tot_flow1 = 0;
+	int tot_v2 = 0, tot_flow2 = 0;
+	int q;
+	for (int i = 1; i <= n; i ++){
+		tot_v1 += tmp[i].v;
+		tot_flow1 += tmp[i].l;
+		tmp[i].id = i;
+		tmp_l[i] = tmp[i];
+		tmp_v[i] = tmp[i];
+		
+	}
+	sort (tmp_v + 1, tmp_v + 1 + n, com3);
+	sort (tmp_l + 1, tmp_l + 1 + n, com4);
+	cin >> q;
+	for (int i = 1; i <= q; i ++)
+		cin >> que[i].val, que[i].id = i;
+	sort (que + 1, que + 1 + q, com2); //我没有使用指针， 我进行离线处理， 然后根据单调性进行处理， 其实看成t的函数也是有单调性的
+	int point1 = 1, point2 = 1; 
+	int point = 1;
+	for (int i = 1; i <= q; i ++){
+		int id = que[i].id;
+		int tim = que[i].val;
+		while (true){
+			if (point1 > n || point2 > n) break;
+			else if (tmp_l[point1].l * tim - tmp_v[point2].v >= 0){ //说明可以合并				
+				int id1 = tmp_l[point1].id, id2 = tmp_v[point2].id;
+				exi[id1] = 0;
+				exi[id2] = 0;
+				tot_v2 += tmp_v[point2].v;
+				tot_flow2 += tmp_l[point1].l;
+				point1 ++, point2 ++;
+			}else  break;
+		}
+		
+		ans[id] = tot_v1 - tot_flow1 * tim - tot_v2 + tot_flow2 * tim;
+	}
+	for (int i = 1; i <= q; i ++)
+		cout << ans[i] << ' ';
+	cout << endl;
+	
+}
+signed main(){
+	cin >> t;
+	while (t --)
+		solve();
+	
+	return 0;
+}
+```
+
+  
+
+## $\href{https://qoj.ac/contest/2581/problem/14808}{H. Pen Pineapple Apple Pen}$ https://qoj.ac/contest/2581/problem/14808
+
+### 碎碎念
+
+​	P ~ P ~ A $\uparrow$ P ~
+
+​	这是一个非预期解做法， 时间复杂度为 $O(n^2logn)， n \le 5000$  , 卡卡常数冲过去了。 采用高贵的二分+哈希的做法顶替了KMP算法。 （我对字符串的开发不到 1%）也算是我独立解决的一道难题了 ~~（开心）~~ （才没有开心呢， 哼！）
+
+### 题解
+
+​	这种题从暴力入手。
+
+​	最暴力的枚举当然是 $O(n^8)$ 超级大暴力， 枚举 $i_1, j_1, i_2, j_2, i_3, j_3, i_4, j_4$ 
+
+​	第四个和第一个要相等，意味着长度相等， 所以我们可以先压掉一维， 将 $j_1, j_4$ 压缩成 $len_1$	
+
+​	我先对严格后缀这个条件进行了处理 我把满足条件的字串看成是 A<u>BC</u>CA 类型的。 为什么这么做？ 因为我想让 CC 进行匹配， 转化成字串相等的问题。 那么也就是说 如果 $i'_2, j_2$ 和 $i_3, j_3$ 相等， 是不是 $(i'_2-1, j_2), (i'_2-2, j_2) ... (i_1 + 1, j_2)$ 与 $i_3, j_3$ 的组合都是满足条件的？ 并且这是不重不漏的。
+
+​	于是我们又又可以压掉一维 将 $i_2, j_2, i_3, j_3$ 转化成 $i_2', i_3, len_2$
+
+​	至此我们将其变成了一个 $O(n^6)$的大暴力。
+
+​	继续考虑优化， 我们思考， 中间 BCC 能不能够整段预处理， 因为我们发现， 其实这一部分 只跟 $i_2$ 和 $j_3$ 有关， 也就是说确定了这两个值之后， 对其余的选取不会产生影响。 所以我们想到数组 $num[i][j]$ 记录的是从 $i$ 开始 $j$ 结尾能分割成 $BCC$ 的情况数， 其中 $i, j$ 这两个位置必须选取。这是为了在统计的时候不杂不漏。 
+
+#### num[ i ][ j \] 的求解
+
+​	事实上如果我们找到 $(i_2', j_2) (i_3, j_3)$ 相等， 我们会发现他们对 $num[1][j_3], num[2][j_3]...num[i'_2-1][j_3]$ 都有贡献， 且为 $1$ 。
+
+不过正如上述所说， 这一部分就是 $O(n^3)$ 无法通过本题。 我们发现其中的瓶颈在于枚举相等的字串， 相等？ 我们枚举$i'_2$ 和 $i_3$ 之后还要枚举 $len_2$ ， 我们发现 $len_2$ 是具有单调性的！ 
+
+​	也就是说这一部分可以进行二分查找， 查找的依据就是$(i'_2, i'_2 + len_2 - 1)(j_3, j_3 + len_2 - 1)$ 是否相等。 那么我们就可以得到一个最长的 $len_2$ 我们将它记作 $Len$ , 那么他会对哪些部分有贡献呢? 其实对 $num[1 \sim (i'_2 - 1)][i_3 \sim (i_3 + Len - 1)]$ 都有 $1$ 的贡献.我们可以通过二维前缀和来处理这个问题.
+
+​	**==(!!!important) note:==**  若 $j - i \le 1$ 则 $num[i][j] \equiv 0$  这是根据定义易得的
+
+```c++
+	for (int i2 = 1; i2 <= n; i2 ++){
+		for (int i3 = i3 + 1; i3 <= n; i3 ++){
+			if(s[i2] != s[i3]) continue;
+			int L = 1, R = min  (i3 - i2, n - i3 + 1);
+			while (L < R){
+				int len = ((L + R + 1) >> 1);
+				int l1 = i2, r1 = i2 + len - 1;
+				int l2 = i3, r2 = i3 + len - 1;
+				int hash_1_sum = del(harsh_sum[r1], harsh_sum[l1 - 1]) * ni_mi[l1] % Mod;
+				int hash_2_sum = del(harsh_sum[r2], harsh_sum[l2 - 1]) * ni_mi[l2] % Mod;
+				if (hash_1_sum == hash_2_sum)
+					L = len;
+				else R = len - 1;
+			}
+			tmp_len[i2][i3] = L;
+			int l1 = i2, r1 = i2 + L - 1;
+			int l2 = i3, r2 = i3 + L - 1;
+			num[1][l2] ++;
+			num[l1][l2] --;
+			num[1][r2 + 1] --;
+			num[l1][r2 + 1] ++;	
+		}
+	}
+```
+
+#### 答案求解
+
+​	回到原题,  如果我们已经枚举了 $i_1, i_4,len_1$ 那么这部分答案是多少呢?
+
+​	$\sum\limits _{i = i_1 + len_1}^{i_4 - 3} \sum\limits_{j = i + 2}^{i_4 - 1} num[i][j]$ 
+
+​	这是啥? 有点像前缀和?
+
+​	还记得 Note 么? 改写成
+
+​	$\sum\limits _{i = i_1 + len_1}^{i_4 - 3} \sum\limits_{j = 1}^{i_4 - 1} num[i][j]$
+
+​	这就是前缀和! 我们记 
+
+​	$sum\_1 [u][v] = \sum\limits_{ i= 1}^u\sum\limits_{j = 1}^{v} num[i][j]$
+
+​	那么这一部分答案是
+
+​		$sum\_1 [i_4 - 3][i_4 - 1] - sum\_1[i_1 + len_1 - 1][i_4 - 1]$
+
+
+
+​	那么, 我们就得到了一个 $O(n^3)$ 的做法.
+
+​	没错, 瓶颈还是枚举相等字串? 那么我们再来一次二分! (不过再来一次二分会被卡常, 所以我们记录了 $tmp\_len[l][m]$ 意思是从位置 $l, m$ 为两个起点开始匹配, 得到的最长的相等字串的长度.  这个在求解 $num[i][j]$ 的时候可以处理出来.  可以在统计答案的时候直接使用, 但是要注意二分上限的减小, 也就是说要取一个 min)
+
+​	
+
+```c++
+	for (int l = 1; l <= n; l ++){
+		for (int m = l + 4; m <= n; m ++){
+			if (s[l] == s[m]){
+				int L = 1, R = min(m - 3 - l, n + 1 - m);
+				L = min (min(m - 3 - l, n + 1 - m), tmp_len[l][m]); //这里二分的边界发生了缩小
+               // while (L < R){
+			  //int len = ((L + R + 1) >> 1);
+				//int l1 = l, r1 = l + len - 1;
+				//int l2 = m, r2 = m + len - 1;
+				//int hash_1_sum = del(harsh_sum[r1], harsh_sum[l1 - 1]) * ni_mi[l1] % Mod;
+				//int hash_2_sum = del(harsh_sum[r2], harsh_sum[l2 - 1]) * ni_mi[l2] % Mod;
+                //通过字符串的多项式哈希来判断相等
+				//if (hash_1_sum == hash_2_sum)
+					//L = len;
+				//else R = len - 1;
+				//} 
+			}
+		}
+	}
+```
+
+我们计"二分"后的结果是 $L$	
+
+那么确定了 $i_1, i_4, L$ 之后答案就应该是
+
+$\sum\limits_{len_1 = 1}^{L}\space \sum\limits _{i = i_1 + len_1}^{i_4 - 3} \space\sum\limits_{j = i + 2}^{i_4 - 1} num[i][j]$
+
+
+
+先将后面两个求和展开, 利用前缀和做一次优化
+
+$\sum\limits_{len_1 = 1}^{L} sum\_1 [i_4 - 3][i_4 - 1] - sum\_1[i_1 + len_1 - 1][i_4 - 1]$ 
+
+$sum_1 [i_4 - 3][i_4 - 1]$ 是一个常数 直接乘上 $L$ 即可
+
+后半部分又是一个前缀和优化问题
+
+记 $sum\_2[u][v] = \sum\limits_{i = 1}^{u} sum\_1[i][v]$
+
+那么这部分答案就应该是 
+
+$L * sum\_1[i_4 - 3][i_4 - 1] - (sum\_2[i_1 + L - 1][i_4 - 1] - sum\_2[i_1  - 1][i_4 - 1])$
+
+时间复杂度为 $O(n^2 logn)$ 可以通过本题
+
+### Coding
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+const int Mod = 998244353;
+const int N = 5e3 + 12;
+const int Mo_1 = 101;
+mt19937 rd;
+string str;
+char s[N];
+int hash_num[N];
+int harsh_sum[N];
+int num[N][N];
+int sum_1[N][N];
+int del (int x, int y){
+	return ((x - y) % Mod + Mod) % Mod;
+}
+int mi[N];
+int ni_mi[N];
+
+int Mo (int x){
+	return (x % Mod + Mod) % Mod;
+}
+
+int quick_pow (int nn, int res){
+	if (res == 0) return 1;
+	if (res % 2 == 1) return nn * quick_pow (nn, res - 1) % Mod;
+	int tmp = quick_pow (nn, res / 2) % Mod;
+	return tmp * tmp % Mod;
+}
+int tmp_len[N][N];
+
+int sum_2[N][N];
+signed main (){
+	int ans = 0;
+	mi[0] = 1;
+	for (int i = 0; i <= 25; i ++)
+		hash_num[i] = rd() % Mod;
+	harsh_sum[0] = 0;
+	
+	cin >> str;
+	
+	for (int i = 0; i < str.size(); i ++)
+		s[i + 1] = str[i];
+	int n = str.size();
+	for (int i = 0; i <= n; i ++)
+		for (int j = 0; j <= n; j ++)
+			sum_1[i][j] = 0, sum_2[i][j] = 0;
+	
+	for (int i = 1; i <= n; i ++)
+		mi[i] =mi[i - 1] * Mo_1 % Mod;
+		
+	ni_mi[n] = quick_pow(mi[n], Mod - 2);
+	
+	for (int i = n - 1; i >= 1; i --)
+		ni_mi[i] = ni_mi[i + 1] * Mo_1 % Mod;
+
+	
+	for (int i = 1; i <= n; i ++){
+		harsh_sum[i] = harsh_sum[i - 1] + hash_num[s[i] - 'a'] * mi[i] % Mod;
+		harsh_sum[i] %= Mod;
+	}
+	
+//	cout << del(harsh_sum[4] , harsh_sum[1]) <<" " << del(harsh_sum[7] , harsh_sum[4]) << endl;
+	//先处理第一部分
+	for (int l = 1; l <= n; l ++){
+		for (int m = l + 1; m <= n; m ++){
+			if(s[l] != s[m]) continue;
+			int L = 1, R = min  (m - l, n - m + 1);
+			while (L < R){
+				int len = ((L + R + 1) >> 1);
+				int l1 = l, r1 = l + len - 1;
+				int l2 = m, r2 = m + len - 1;
+				int hash_1_sum = del(harsh_sum[r1], harsh_sum[l1 - 1]) * ni_mi[l1] % Mod;
+				int hash_2_sum = del(harsh_sum[r2], harsh_sum[l2 - 1]) * ni_mi[l2] % Mod;
+				if (hash_1_sum == hash_2_sum)
+					L = len;
+				else R = len - 1;
+			}
+			tmp_len[l][m] = L;
+			int l1 = l, r1 = l + L - 1;
+			int l2 = m, r2 = m + L - 1;
+			num[1][l2] ++;
+			num[l1][l2] --;
+			num[1][r2 + 1] --;
+			num[l1][r2 + 1] ++;	
+		}
+	}
+	
+	for (int i = 1; i <= n; i ++){
+		for (int l = 1; l <= n; l ++){
+			num[i][l] = (num[i][l] + num[i - 1][l]) % Mod + num[i][l - 1];
+			num[i][l] = Mo(num[i][l]);
+			num[i][l] = del(num[i][l], num[i - 1][l - 1]);
+		}
+	}
+	
+	for (int i = 1; i <= n; i ++){
+		for (int l = 1; l <= n; l ++){
+			sum_1[i][l] = (num[i][l] + sum_1[i - 1][l]) % Mod + sum_1[i][l - 1];
+			sum_1[i][l] = Mo(sum_1[i][l]);
+			sum_1[i][l] = del(sum_1[i][l], sum_1[i - 1][l - 1]);
+		}
+	}	
+	
+	for (int l = 1; l <= n; l ++)
+		for (int i = 1; i <= n; i ++)
+			sum_2[i][l] = sum_2[i - 1][l] + sum_1[i][l];
+		
+		
+	for (int i1 = 1; i1 <= n; i1 ++){
+		for (int i4 = i1 + 4; i4 <= n; i4 ++){
+			if (s[i1] == s[i4]){
+				int L = 1, R = min(i4 - 3 - i1, n + 1 - i4);
+				L = min (R, tmp_len[i1][i4]);
+				int base = sum_1[i4 - 3][i4 - 1];
+				int tmp = base * L % Mod;
+				int delta = del (sum_2[i1 + L - 1][i4 - 1], sum_2[i1 - 1][i4 - 1]);
+				ans += del (tmp, delta);
+				ans %= Mod;
+			}
+		}
+	}
+
+	cout << ans << endl;
+	return 0;
+}
+```
+
